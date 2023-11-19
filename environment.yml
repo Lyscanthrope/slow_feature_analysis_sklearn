@@ -1,0 +1,11 @@
+name: slow_feature_analysis_sklearn
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - numpy
+  - pandas
+  - matplotlib
+  - jupyter 
+  - scikit-learn 
+  - pip
