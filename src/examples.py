@@ -55,7 +55,7 @@ def firstorder_steps(series_length=600):
 
 
 def secondorder_steps(series_length=600):
-    t = np.linspace(0, 80, series_length)
+    t = np.linspace(0, 100, series_length)
     Kp = 2.0
     Kp = 2.0  # gain
     tau = 0.3  # time constant
@@ -64,13 +64,22 @@ def secondorder_steps(series_length=600):
     du = 1.0  # change in u
     utot = ((t % 10 < 5)).reshape(series_length, 1)
     # slow_varying = np.log(t) + 0.01
-    limit = 25
-    slow_varying = np.array([1 if _t < limit else (_t / limit) ** 3 for _t in t])
+    limit1 = 20
+    limit2=80
+    def function(_t):
+        if  _t < limit1:
+            out=1
+        elif _t>limit2:
+            out=(limit2/limit1)**2
+        else:
+            out=(_t / limit1)**2
+        return out
+    slow_varying = np.array([function(_t) for _t in t])
 
     def model3(x, t):
         y = x[0]
         u = t % 10 < 5
-        tau_ = tau * (1 if t < limit else (t / limit) ** 3)
+        tau_ = tau / (function(t))
         # if t > 10:
         # tau_ *= 4
         dydt = x[1]
