@@ -48,30 +48,33 @@ def firstorder_steps(series_length=600):
         return (-y + Kp * u) / taup_
 
     y = odeint(model3, 0, t)
-    return pd.DataFrame(np.concatenate([y, utot], axis=1), columns=["x1", "true"])
+    slow_varying = (t > 10).reshape(-1, 1)
+    return pd.DataFrame(
+        np.concatenate([y, utot, slow_varying], axis=1), columns=["x1", "u", "true"]
+    )
 
 
 def secondorder_steps(series_length=600):
     t = np.linspace(0, 80, series_length)
     Kp = 2.0
     Kp = 2.0  # gain
-    tau = 0.05  # time constant
+    tau = 0.3  # time constant
     zeta = 0.25  # damping factor
     theta = 0.0  # no time delay
     du = 1.0  # change in u
-    utot = ((t % 2.5 < 1)).reshape(series_length, 1)
+    utot = ((t % 10 < 5)).reshape(series_length, 1)
     # slow_varying = np.log(t) + 0.01
-    limit = 40
-    slow_varying = np.array([1 if _t < limit else (_t / limit) ** 2 for _t in t])
+    limit = 25
+    slow_varying = np.array([1 if _t < limit else (_t / limit) ** 3 for _t in t])
 
     def model3(x, t):
         y = x[0]
-        u = t % 2.5 < 1
-        tau_ = tau / (1 if t < limit else (t / limit) ** 2)
+        u = t % 10 < 5
+        tau_ = tau * (1 if t < limit else (t / limit) ** 3)
         # if t > 10:
         # tau_ *= 4
         dydt = x[1]
-        dy2dt2 = (-2.0 * zeta * tau_ * dydt - y + Kp * u) / tau**2
+        dy2dt2 = (-2.0 * zeta * tau_ * dydt - y + Kp * u) / tau**3
         return [dydt, dy2dt2]
 
     x3 = odeint(model3, [0, 0], t)

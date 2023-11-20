@@ -12,8 +12,8 @@ reload(sfa)
 reload(examples)
 
 df = examples.logistic_map(300, Phi=1)
-df2 = examples.logistic_map(600, Phi=2)
-df = pd.concat([df, df2], axis=0, ignore_index=True)
+# df2 = examples.logistic_map(1600, Phi=2)
+# df = pd.concat([df, df2], axis=0, ignore_index=True)
 # df = examples.simple_2D(400)
 # df = examples.simple_modulation(400)
 # df = examples.firstorder_steps(800)
@@ -38,21 +38,21 @@ from sklearn.preprocessing import SplineTransformer
 # faire un objet pour PCA singlar au dessus de 1
 
 reload(sfa)
-n_lags = 10
+n_lags = 40
 poly_order = 3
 pre = StandardScaler()
 pre2 = StandardScaler()
 # expansion = PolynomialFeatures(poly_order, interaction_only=False)
-expansion = SplineTransformer()
+# expansion = SplineTransformer(degree=poly_order)
 # expansion = RBFSampler()
-# expansion = Nystroem(n_components=200)
+expansion = Nystroem(n_components=50)
 # whiten = PCA(n_components=1 - 1e-14, whiten=True)
-whiten = sfa.PCA_whiten_kaiser(singular_threshold=1e-15)  # 1 - (1e-14)
+whiten = sfa.PCA_whiten_kaiser(singular_threshold=1e-12)  # 1 - (1e-14)
 # whiten.fit(dfS)
 center = StandardScaler(with_std=False)
 diff = FunctionTransformer(sfa.differentiate)
 lags = FunctionTransformer(sfa.make_lags, kw_args={"n_lags": n_lags})
-laststep = PCA()
+laststep = sfa.PCA_whiten_kaiser(singular_threshold=1e-12)  # PCA()
 
 
 pipe = Pipeline(
@@ -63,7 +63,7 @@ pipe = Pipeline(
         ("pre2", pre2),
         ("whiten", whiten),
         ("diff", diff),
-        # ("centering", center),
+        ("centering", center),
         ("last", laststep),
     ]
 )
@@ -79,6 +79,14 @@ xt = pipe[-1:].transform(xt)
 
 print(pipe["whiten"].singular_values_)
 print(xt.shape)
+ISSF = ((1 / pipe[-1].singular_values_) / (1 / pipe[-1].singular_values_).sum())[::-1]
+AISF = ISSF.cumsum() / ISSF.sum() * 100
+plt.plot(AISF)
+plt.title(f"AISF for below 50 : {np.sum(AISF<50)}")
+plt.show()
+
+# Idée : selection d'hyperparametre pour minimiser le nombre de variable qui ont une AISF>90%
+
 i_min = -1
 true = df["true"]
 estimande = xt[:, i_min]
