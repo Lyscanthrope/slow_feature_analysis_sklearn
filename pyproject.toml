@@ -1,0 +1,29 @@
+[project]
+authors = [{name = "Lyscanthrope", email = "88078403+Lyscanthrope@users.noreply.github.com"}]
+name = "slow_graph_feature_analysis"
+requires-python = ">= 3.11"
+version = "0.1.0"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "scikit-learn",
+]
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["win-64"]
+
+[tool.pixi.dependencies]
+python = "==3.12"
+matplotlib="*"
+marimo="*"
+
+[tool.pixi.pypi-dependencies]
+slow_graph_feature_analysis = { path = ".", editable = true }
+
+[tool.pixi.tasks]

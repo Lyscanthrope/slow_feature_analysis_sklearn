@@ -1,3 +1,4 @@
 {
-    "jupyter.notebookFileRoot": "."
+    "jupyter.notebookFileRoot": ".",
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }
