@@ -34,14 +34,14 @@ def _():
     import matplotlib.pyplot as plt
     import pathlib
     from importlib import reload
-    from slow_graph_feature_analysis import examples
+    from slow_graph_feature_analysis import examples,graph_sfa
 
-    return examples, np, plt, reload
+    return examples, graph_sfa, np, plt
 
 
 @app.cell
 def _(examples, plt):
-    df = examples.logistic_map(350)
+    df = examples.logistic_map(1000)
     dfS = df.drop(["true"], axis=1)
     plt.plot(dfS)
     plt.show()
@@ -49,7 +49,7 @@ def _(examples, plt):
 
 
 @app.cell
-def _(dfS, n_pca_selector, np, plt, reload, sfa):
+def _(dfS, examples, graph_sfa):
     from sklearn.preprocessing import FunctionTransformer
 
     from sklearn.preprocessing import StandardScaler
@@ -59,70 +59,61 @@ def _(dfS, n_pca_selector, np, plt, reload, sfa):
     from sklearn.preprocessing import SplineTransformer
 
 
-    reload(n_pca_selector)
-    reload(sfa)
-    n_lags = 5
-    poly_order = 3
-    pre = StandardScaler()
-    pre2 = StandardScaler()
-    # expansion = SplineTransformer(degree=poly_order, n_knots=4)
-    # expansion = FunctionTransformer(lambda x: x)
-    expansion = Nystroem(n_components=200)
-    whiten = sfa.PCA_whiten_enthropy(threshold=0.90)
-    # whiten = n_pca_selector.PCAWithSignflipPA(
-    #     whiten=True, thresholding="pairwise", plotting=True, alpha=95
-    # )
+    n_lags=3
+    poly_order = 2
+    expansion = Nystroem(n_components=50)
+    expansion=PolynomialFeatures(degree=2)
 
-    center = StandardScaler(with_std=False)
-    diff = FunctionTransformer(sfa.differentiate)
-    lags = FunctionTransformer(sfa.make_lags, kw_args={"n_lags": n_lags})
-    laststep = sfa.PCA_whiten_kaiser(singular_threshold=1e-6)  # PCA()
+
+    lags = FunctionTransformer(examples.make_lags, kw_args={"n_lags": n_lags})
+    laststep = graph_sfa.GraphSlowFeatureAnalysis(10,)
 
     pipe = Pipeline(
         [
             ("lag", lags),
             ("expension", expansion),
-            # ("pre2", pre2),
-            ("whiten", whiten),
-            ("diff", diff),
-            ("centering", center),
             ("last", laststep),
         ]
     )
     pipe.fit(dfS)
-    names = [l[0] for l in pipe.steps]
-    index_whiten = [l[0] for l in pipe.steps].index("whiten")
-    xt = pipe[0 : (index_whiten + 1)].transform(dfS)
-    print(xt.shape)
-    xt = pipe[-1:].transform(xt)
+    # names = [l[0] for l in pipe.steps]
+    # index_whiten = [l[0] for l in pipe.steps].index("whiten")
+    # xt = pipe[0 : (index_whiten + 1)].transform(dfS)
+    # print(xt.shape)
+    # xt = pipe[-1:].transform(xt)
 
-    ISSF = ((1 / pipe[-1].singular_values_) / (1 / pipe[-1].singular_values_).sum())[::-1]
-    AISF = ISSF.cumsum() / ISSF.sum() * 100
-    plt.plot(AISF)
-    nb = np.sum(AISF < 90)
-    plt.title(f"AISF for below 50 : {nb}")
-    plt.show()
-    return nb, pipe, xt
+    # ISSF = ((1 / pipe[-1].singular_values_) / (1 / pipe[-1].singular_values_).sum())[::-1]
+    # AISF = ISSF.cumsum() / ISSF.sum() * 100
+    # plt.plot(AISF)
+    # nb = np.sum(AISF < 90)
+    # plt.title(f"AISF for below 50 : {nb}")
+    # plt.show()
+    return (pipe,)
 
 
 @app.cell
-def _(df, examples, np, pipe, plt, xt):
-    i_min = -1
+def _(dfS, pipe, plt):
+    xt=pipe.transform(dfS)
+    plt.plot(xt)
+    return (xt,)
+
+
+@app.cell
+def _(df, examples, np, plt, xt):
+    i_min = 0
     true = df["true"]
     estimande = xt[:, i_min]
-    delta_value = pipe[-1].singular_values_[i_min]
+    # delta_value = pipe[-1].singular_values_[i_min]
     corr = np.corrcoef(true, estimande)[0, 1]
     plt.plot(examples.rescale(estimande) * np.sign(corr), label="estimande")
-    plt.title(f"corr:{corr:.4f}, singular value: {delta_value:.2f}")
+    # plt.title(f"corr:{corr:.4f}, singular value: {delta_value:.2f}")
     plt.plot(examples.rescale(true), label="true")
     plt.show()
     return
 
 
 @app.cell
-def _(nb, plt, xt):
-    plt.plot(xt[:, -nb:])
-    plt.show()
+def _():
     return
 
 

@@ -8,6 +8,17 @@ from scipy import signal
 from scipy.fft import fftshift
 
 
+
+
+def make_lags(x_df, n_lags=5):
+    x_lag_past = []
+    for i in range(n_lags):
+        new_x = x_df.shift(i)
+        new_x.columns = [f"{c}___{i}" for c in x_df.columns]
+        x_lag_past.append(new_x)
+    Xp = pd.concat(x_lag_past, axis=1).interpolate(limit_direction="backward")
+    return Xp
+
 def logistic_map(series_length=150, Phi=1):
     """logisitic map examples from litterature
 
