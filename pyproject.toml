@@ -1,6 +1,6 @@
 [project]
 authors = [{name = "Lyscanthrope", email = "88078403+Lyscanthrope@users.noreply.github.com"}]
-name = "slow_graph_feature_analysis"
+name = "slow_feature_analysis"
 requires-python = ">= 3.11"
 version = "0.1.0"
 dependencies = [
@@ -22,8 +22,9 @@ platforms = ["win-64"]
 python = "==3.12"
 matplotlib="*"
 marimo="*"
+pyzmq="*"
 
 [tool.pixi.pypi-dependencies]
-slow_graph_feature_analysis = { path = ".", editable = true }
+slow_feature_analysis = { path = ".", editable = true }
 
 [tool.pixi.tasks]

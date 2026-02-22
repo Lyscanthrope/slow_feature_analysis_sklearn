@@ -8,7 +8,7 @@
 
 import marimo
 
-__generated_with = "0.19.11"
+__generated_with = "0.20.1"
 app = marimo.App()
 
 
@@ -34,14 +34,14 @@ def _():
     import matplotlib.pyplot as plt
     import pathlib
     from importlib import reload
-    from slow_graph_feature_analysis import examples,graph_sfa
+    from slow_feature_analysis import examples,sfa
 
-    return examples, graph_sfa, np, plt
+    return examples, np, plt, reload, sfa
 
 
 @app.cell
 def _(examples, plt):
-    df = examples.logistic_map(1000)
+    df = examples.logistic_map(400)
     dfS = df.drop(["true"], axis=1)
     plt.plot(dfS)
     plt.show()
@@ -49,7 +49,7 @@ def _(examples, plt):
 
 
 @app.cell
-def _(dfS, examples, graph_sfa):
+def _(dfS, examples, reload, sfa):
     from sklearn.preprocessing import FunctionTransformer
 
     from sklearn.preprocessing import StandardScaler
@@ -58,16 +58,17 @@ def _(dfS, examples, graph_sfa):
     from sklearn.kernel_approximation import Nystroem, RBFSampler
     from sklearn.preprocessing import SplineTransformer
 
-
+    reload(sfa)
     n_lags=3
-    poly_order = 2
+    poly_order = 5
     expansion = Nystroem(n_components=50)
-    expansion=PolynomialFeatures(degree=2)
+    # expansion=PolynomialFeatures(degree=poly_order)
 
 
     lags = FunctionTransformer(examples.make_lags, kw_args={"n_lags": n_lags})
-    laststep = graph_sfa.GraphSlowFeatureAnalysis(10,)
+    # laststep = sfa.SFA(n_components=3)
 
+    laststep = sfa.SFASelector(sfa.SFA(), n_permutations=50, percentile=1,block_length=20)
     pipe = Pipeline(
         [
             ("lag", lags),
@@ -76,25 +77,20 @@ def _(dfS, examples, graph_sfa):
         ]
     )
     pipe.fit(dfS)
-    # names = [l[0] for l in pipe.steps]
-    # index_whiten = [l[0] for l in pipe.steps].index("whiten")
-    # xt = pipe[0 : (index_whiten + 1)].transform(dfS)
-    # print(xt.shape)
-    # xt = pipe[-1:].transform(xt)
 
-    # ISSF = ((1 / pipe[-1].singular_values_) / (1 / pipe[-1].singular_values_).sum())[::-1]
-    # AISF = ISSF.cumsum() / ISSF.sum() * 100
-    # plt.plot(AISF)
-    # nb = np.sum(AISF < 90)
-    # plt.title(f"AISF for below 50 : {nb}")
-    # plt.show()
+    trS=pipe[:-1].transform(dfS)
     return (pipe,)
 
 
 @app.cell
-def _(dfS, pipe, plt):
+def _(pipe):
+    pipe[-1].n_selected_
+    return
+
+
+@app.cell
+def _(dfS, pipe):
     xt=pipe.transform(dfS)
-    plt.plot(xt)
     return (xt,)
 
 
@@ -109,6 +105,18 @@ def _(df, examples, np, plt, xt):
     # plt.title(f"corr:{corr:.4f}, singular value: {delta_value:.2f}")
     plt.plot(examples.rescale(true), label="true")
     plt.show()
+    return
+
+
+@app.cell
+def _(plt, xt):
+    plt.plot(xt)
+    return
+
+
+@app.cell
+def _(dfS, pipe, plt):
+    plt.plot(pipe[-1].get_residuals(pipe[:-1].transform(dfS)))
     return
 
 

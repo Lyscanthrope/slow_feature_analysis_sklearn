@@ -3,7 +3,7 @@ import numpy as np
 from numpy import ndarray
 import pandas as pd
 import matplotlib.pyplot as plt
-from src.slow_graph_feature_analysis import examples
+from src.slow_feature_analysis import examples
 from src import sfa, n_pca_selector
 from importlib import reload
 
